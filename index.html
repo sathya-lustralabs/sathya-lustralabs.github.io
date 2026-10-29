@@ -29,18 +29,33 @@
 </style>
 <script>
   /*
-   * GOOGLE FORM SET-UP (emails go straight into your form's responses)
-   * 1. Make a Google Form with one "Short answer" question called Email.
-   *    In Settings > Responses, set "Collect email addresses" to "Do not collect"
-   *    and turn off "Restrict to users in your organisation".
-   * 2. Click the three-dot menu > "Get pre-filled link", type test@test.com
-   *    in the Email question, click "Get link" and copy the link.
-   * 3. From that link copy:
-   *      FORM_ID     = the long code between /d/e/ and /viewform
-   *      EMAIL_ENTRY = the number after "entry."
+   * GOOGLE FORM SET-UP: paste ONE link below and you are done.
+   * 1. Open your Google Form in edit mode.
+   * 2. Click the three-dot menu (top right) > "Get pre-filled link".
+   * 3. Type test@test.com into the Email question, click "Get link",
+   *    then "Copy link".
+   * 4. Paste the whole link between the quotes below.
+   * Form settings that must be right (Settings > Responses):
+   *    "Collect email addresses" = "Do not collect"
+   *    "Limit to 1 response" = off; no sign-in or organisation restriction
+   *    The form must be "Accepting responses", with Email as the only required question.
    */
-  var FORM_ID = "1FAIpQLSdtmlOlgRue8_VnmxsyyXsHHYB3J9Yva4ISL6SkoSgzqbXtbw/";       // e.g. "1FAIpQLSf...abc"
-  var EMAIL_ENTRY = "473639805";   // e.g. "123456789"
+  var PREFILLED_LINK = "https://docs.google.com/forms/d/e/1FAIpQLSfhA8t3PoYAoSmDvH-2ZVUTKc6ImV81_gfuU357BLUCKZfiYg/viewform?usp=pp_url&entry.1268599318=test@test.com";
+
+  // Worked out from the link above; you can also fill these in by hand.
+  var FORM_ID = "";       // the long code between /d/e/ and /viewform
+  var EMAIL_ENTRY = "";   // the number after "entry."
+  (function () {
+    var m = PREFILLED_LINK.match(/\/forms\/d\/e\/([^\/]+)\//);
+    if (m && !FORM_ID) FORM_ID = m[1];
+    var e = PREFILLED_LINK.match(/entry\.(\d+)=/);
+    if (e && !EMAIL_ENTRY) EMAIL_ENTRY = e[1];
+    // Forgive common slips: a full URL in FORM_ID, or "entry.123" in EMAIL_ENTRY.
+    var f = FORM_ID.match(/\/forms\/d\/e\/([^\/]+)/); if (f) FORM_ID = f[1];
+    FORM_ID = FORM_ID.trim();
+    EMAIL_ENTRY = String(EMAIL_ENTRY).replace(/^entry\./, "").trim();
+    if (!FORM_ID || !EMAIL_ENTRY) console.warn("Lustra sign-up: Google Form not connected, so emails are not being saved.");
+  })();
 
   // The window (here, the embed box) width decides the layout.
   var phone = matchMedia("(max-width: 640px)");
@@ -82,6 +97,7 @@
   <span>&copy; <span id="year">2026</span> Lustra Labs. All rights reserved.</span>
   <a href="mailto:info@lustralabs.ai" target="_top">info@lustralabs.ai</a>
 </footer>
+<iframe name="gform-sink" id="gform-sink" title="Sign-up" hidden style="display:none"></iframe>
 <script>
   document.getElementById("year").textContent = new Date().getFullYear();
   document.getElementById("request-form").addEventListener("submit", function (e) {
@@ -95,11 +111,21 @@
     }
     card.classList.remove("has-error");
     card.classList.add("sent");
-    // Save the email in your Google Form, once FORM_ID and EMAIL_ENTRY are filled in above.
+    // Save the email in the Google Form. A hidden form posts into a hidden frame,
+    // the most dependable way to send to Google Forms from inside Google Sites.
     if (FORM_ID && EMAIL_ENTRY) {
-      var body = new URLSearchParams();
-      body.append("entry." + EMAIL_ENTRY, email);
-      fetch("https://docs.google.com/forms/d/e/" + FORM_ID + "/formResponse", { method: "POST", mode: "no-cors", body: body });
+      var sink = document.getElementById("gform-sink");
+      var post = document.createElement("form");
+      post.method = "POST";
+      post.action = "https://docs.google.com/forms/d/e/" + FORM_ID + "/formResponse";
+      post.target = "gform-sink";
+      post.style.display = "none";
+      var field = document.createElement("input");
+      field.type = "hidden"; field.name = "entry." + EMAIL_ENTRY; field.value = email;
+      post.appendChild(field);
+      document.body.appendChild(post);
+      post.submit();
+      post.remove();
     }
   });
 </script>
